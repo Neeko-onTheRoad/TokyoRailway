@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 public record RailwayPointSegment {
 
@@ -18,8 +17,8 @@ public record RailwayPointSegment {
 		Points = points;
 		Connections = connections;
 
-		if (Validation.Collection.IsCountGreaterThan(
-			connections, nameof(connections), 3, out var exception
+		if (!Validation.Collection.IsCountLessThanOrEqualTo(
+			connections, 3, out var exception, nameof(connections)
 		)) throw exception;
 
 	}
