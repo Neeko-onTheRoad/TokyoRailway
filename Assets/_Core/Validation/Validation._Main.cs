@@ -1,10 +1,7 @@
 using System;
-using System.Runtime.CompilerServices;
+using System.Linq;
 
 public static partial class Validation {
-
-	private static string AddInfo(this string message, string name, object value) =>
-		message += $"\n\t{name}: {value}";
 
 	private static string MentionOrPronoun(
 		this string message,
@@ -21,8 +18,16 @@ public static partial class Validation {
 
 	}
 
-	private static ValidationResult Validate<TException>(bool result, Func<TException> exception) where TException : Exception {
-		return new(result, result ? null : exception());
+	private static string AddInfo(this string message, string name, object value)
+		=> message += $"\n\t{name}: {value}";
+
+	private static ValidationResult Validate<TException>(bool result, Func<TException> exception) where TException : Exception 
+		=> new(result, result ? null : exception());
+
+	public static void ThrowIfInvalid(params ValidationResult[] validations) {
+		validations
+			.Aggregate((prev, next) => prev + next)
+			.ThrowIfInvalid();
 	}
 
 }

@@ -20,4 +20,18 @@ public readonly struct ValidationResult {
 		if (!IsValid) throw Exception ?? new();
 	}
 
+	//======================================================================| Operators
+
+	public static ValidationResult operator +(ValidationResult left, ValidationResult right) {
+		return new(
+			left.IsValid || right.IsValid, 
+			(left.IsValid, right.IsValid) switch {
+				(true, true) => null,
+				(false, true) => left.Exception,
+				(true, false) => right.Exception,
+				(false, false) => new AggregateException(left.Exception, right.Exception).Flatten()
+			}
+		);
+	}
+
 }
