@@ -2,9 +2,18 @@
 
 	//======================================================================| Fields
 
-	private RailwaySegment _segment;
 	private RailwayJoint _joint = null;
-	private RailwaySide _side;
+
+	private readonly RailwaySegment _segment;
+	private readonly RailwaySide _side;
+
+	//======================================================================| Properties
+
+	public RailwaySegment Segment => _segment;
+	public RailwaySide Side => _side;
+
+	public RailwayJoint Joint => _joint;
+	public RailwaySide JointSide => _joint?.GetSide(this) ?? default;
 
 	//======================================================================| Constructors
 
@@ -15,9 +24,24 @@
 
 	//======================================================================| Methods
 
+	internal void SetJoint(RailwayJoint joint) {
+		_joint = joint;
+	}
+
 	public void ConnectTo(RailwayConnection connection) {
 
-		if (_joint?.Unjoin(this, _side))
+		if (connection == this)
+			return;
+
+		if (connection.Joint is RailwayJoint joint) {
+			var side = connection.JointSide.Opposite();
+			joint.Join(this, side);
+			return;
+		}
+
+		joint = new();
+		joint.Join(this, RailwaySide.Front);
+		joint.Join(connection, RailwaySide.Rear);
 
 	}
 

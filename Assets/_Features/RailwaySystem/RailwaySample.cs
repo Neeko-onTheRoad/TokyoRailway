@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public record RailwayPoint(
+public record RailwaySample(
 
 	Vector3 Position,
 	Vector3 Tangent,
@@ -8,7 +8,7 @@ public record RailwayPoint(
 
 ) {
 
-	public static RailwayPoint Lerp(RailwayPoint a, RailwayPoint b, float t) {
+	public static RailwaySample Lerp(RailwaySample a, RailwaySample b, float t) {
 
 		var tangent = Vector3.Lerp(a.Tangent, b.Tangent, t);
 		var normal = Vector3.Lerp(a.Normal, b.Normal, t);
