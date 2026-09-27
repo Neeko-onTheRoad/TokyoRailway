@@ -20,4 +20,10 @@ public static class SplineExtensions {
 
 	}
 	
+	public static BezierKnot GetKnot(this SplineContainer container, SplineKnotIndex index) =>
+		container[index.Spline][index.Knot];
+
+	public static SplineKnotIndex WithSpline(this SplineKnotIndex index, int spline) => new(spline, index.Knot);
+	public static SplineKnotIndex WithKnot(this SplineKnotIndex index, int knot) => new(index.Spline, knot);
+
 }

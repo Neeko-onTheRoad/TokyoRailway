@@ -6,34 +6,33 @@ public class RailwaySplineBuilder : RailwayBuilder {
 
 	//======================================================================| Fields
 
-	[SerializeField]
+	[SerializeField, Min(0.001f)]
 	private float _sampleInterval;
 
 	[SerializeField]
 	private SplineContainer[] _containers;
 
 	private readonly List<RailwaySegment> _segments = new();
-	private readonly List<(RailwayConnection[], RailwayConnection[])> _joints = new();
 
-	private HashSet<RailwayConnection> _jointVisited = new();
-	private Dictionary<RailwayConnection, (SplineContainer, SplineKnotIndex)> _indices = new();
+	private readonly HashSet<RailwayConnection> _jointVisited = new();
+	private readonly Dictionary<RailwayConnection, ConnectionIndexInfo> _indexInfo = new();
+	private readonly Dictionary<(SplineContainer, SplineKnotIndex), HashSet<RailwayConnection>> _connectionsByIndex = new();
 
-	//======================================================================| Unity Methods
+	//======================================================================| Methods
 
-	private void Start() {
+	public override IReadOnlyCollection<RailwaySegment> Build() {
+
+		_segments.Clear();
+		_jointVisited.Clear();
+		_indexInfo.Clear();
+		_connectionsByIndex.Clear();
 
 		BuildAllContainers();
 		BuildAllJoints();
 
-		_indices = null;
-		_jointVisited = null;
+		return _segments;
 
 	}
-
-	//======================================================================| Methods
-
-	protected override IEnumerable<RailwaySegment> GetSegments() => _segments;
-	protected override IEnumerable<(RailwayConnection[], RailwayConnection[])> GetJoints() => _joints;
 
 	private void BuildAllContainers() {
 		foreach (var container in _containers) {
@@ -49,48 +48,75 @@ public class RailwaySplineBuilder : RailwayBuilder {
 
 	private void BuildSpline(SplineContainer container, int splineIndex) {
 
-		int startIndex = 0;
-		int endIndex = 0;
-
 		var spline = container[splineIndex];
+		if (spline.Count < 2) return;
 
-		while (startIndex < spline.Count) {
+		int startIndex = 0;
 
-			endIndex++;
+		for (int endIndex = 1; endIndex < spline.Count; endIndex++) {
 
-			if (container.AreKnotLinked(
-				new(splineIndex, startIndex),
-				new(splineIndex, endIndex)
-			)) {
+			SplineKnotIndex index = new(splineIndex, endIndex);
 
-				var segment = BuildSegment(spline, startIndex, endIndex);
-				
-				_segments.Add(segment);
-				_indices[segment.FrontConnection] = (container, new(splineIndex, startIndex));
-				_indices[segment.RearConnection] = (container, new(splineIndex, endIndex));
-				
-				startIndex = endIndex;
+			bool isLast = endIndex == spline.Count - 1;
+			bool isLinked = container.KnotLinkCollection.TryGetKnotLinks(index, out _);
+
+			if (!isLast && !isLinked) continue;
+
+			var segment = BuildSegment(container, splineIndex, startIndex, endIndex);
+			_segments.Add(segment);
+
+			Register(startIndex, 1, segment.FrontConnection);
+			Register(endIndex, -1, segment.RearConnection);
+
+			startIndex = endIndex;
+			
+			void Register(int knotIndex, int offset, RailwayConnection connection) {
+
+				_indexInfo[connection] = new(
+					container,
+					new(splineIndex, knotIndex)
+				);
+
+				var key = (container, new SplineKnotIndex(splineIndex, knotIndex));
+
+				if (!_connectionsByIndex.TryGetValue(key, out var connections)) {
+					connections = new();
+					_connectionsByIndex.Add(key, connections);
+				}
+
+				connections.Add(connection);
+
 			}
 
 		}
 
 	}
 
-	private RailwaySegment BuildSegment(Spline spline, int startIndex, int endIndex) {
+	private RailwaySegment BuildSegment(SplineContainer container, int splineIndex, int startIndex, int endIndex) {
 
-		var splineLength = spline.GetLength();
-		var startPoint = spline.GetLengthBetween(0, startIndex);
+		var spline = container[splineIndex];
+
+		var startDistance = spline.GetLengthBetween(0, startIndex);
 		var segmentLength = spline.GetLengthBetween(startIndex, endIndex);
-		var sampleCount = Mathf.CeilToInt(segmentLength / _sampleInterval);
 
-		List<RailwaySample> samples = new();
+		int intervalCount = Mathf.Max(1, Mathf.CeilToInt(segmentLength / _sampleInterval));
 
-		for (int i = 0; i < sampleCount; i++) {
+		List<RailwaySample> samples = new(intervalCount + 1);
 
-			var progress = (float)i / sampleCount;
-			var parameter = (startPoint + progress * segmentLength) / splineLength;
+		for (int i = 0; i <= intervalCount; i++) {
 
-			spline.Evaluate(parameter,
+			var progress = (float)i / intervalCount;
+			var distance = startDistance + segmentLength * progress;
+
+			var parameter = SplineUtility.GetNormalizedInterpolation(
+				spline,
+				distance,
+				PathIndexUnit.Distance
+			);
+
+			container.Evaluate(
+				splineIndex,
+				parameter,
 				out var position,
 				out var tangent,
 				out var normal
@@ -105,27 +131,67 @@ public class RailwaySplineBuilder : RailwayBuilder {
 	}
 
 	private void BuildAllJoints() {
+		foreach (var connection in _indexInfo.Keys) {
+			if (_jointVisited.Contains(connection)) continue;
+			BuildJoint(connection);
+		}
+	}
 
-		foreach (var segment in _segments) {
+	private void BuildJoint(RailwayConnection seed) {
 
-			if (!_jointVisited.Contains(segment.FrontConnection))
-				BuildJoint(segment.FrontConnection);
+		_jointVisited.Add(seed);
 
-			if (!_jointVisited.Contains(segment.RearConnection))
-				BuildJoint(segment.RearConnection);
+		var seedInfo = _indexInfo[seed];
+
+		var container = seedInfo.Container;
+		var index = seedInfo.Index;
+		var seedTangent = container
+			.GetKnot(index).TangentOut
+			.ToVector2WithoutY();
+
+		RailwayJoint joint = new();
+		joint.Join(seed, RailwaySide.Front);
+
+		HashSet<SplineKnotIndex> indices = new() { index };
+
+		if (container.KnotLinkCollection.TryGetKnotLinks(index, out var links)) {
+			foreach (var link in links) {
+				indices.Add(link);
+			}
+		}
+
+		foreach (var linkedIndex in indices) {
+
+			if (!_connectionsByIndex.TryGetValue((container, linkedIndex), out var connections)) continue;
+
+			foreach (var connection in connections) {
+
+				if (connection == seed)
+					continue;
+
+				var linkedInfo = _indexInfo[connection];
+				var linkedTangent = container
+					.GetKnot(linkedInfo.Index).TangentOut
+					.ToVector2WithoutY();
+
+				var side = Vector2.Dot(seedTangent, linkedTangent) <= 0f
+					? RailwaySide.Rear
+					: RailwaySide.Front;
+
+				joint.Join(connection, side);
+				_jointVisited.Add(connection);
+
+			}
 
 		}
 
 	}
 
-	private void BuildJoint(RailwayConnection seed) {
+	//======================================================================| Nested Types
 
-		var (container, index) = _indices[seed];
-		var links = container.KnotLinkCollection.GetKnotLinks(index);
-
-		// TODO: from here, build some joint shit
-		//       what you need to do is just combine some connections by links.
-
-	}
+	private record ConnectionIndexInfo(
+		SplineContainer Container,
+		SplineKnotIndex Index
+	);
 
 }

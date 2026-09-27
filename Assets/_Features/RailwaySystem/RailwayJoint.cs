@@ -79,7 +79,7 @@ public class RailwayJoint {
 		if (connections.Contains(connection)) return;
 
 		Validation
-			.IsSmallerThan(
+			.IsSmallerThanOrEqualTo(
 				connections.Count,
 				MaximumSwitchCount,
 				$"Count of {nameof(connections)}",
