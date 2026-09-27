@@ -17,10 +17,10 @@ public class RailwayJoint {
 
 	//======================================================================| Properties
 
-	public RailwayConnection? CurrentFrontConnection =>
+	public RailwayConnection ActiveFrontConnection =>
 		_frontConnections.Count > 0 ? _frontConnections[_frontSwitch] : null;
 
-	public RailwayConnection? CurrentRearConnection =>
+	public RailwayConnection ActiveRearConnection =>
 		_rearConnections.Count > 0 ? _rearConnections[_rearSwitch] : null;
 
 	public int FrontSwitch {

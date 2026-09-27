@@ -20,4 +20,13 @@
 	public readonly RailwayCoordinate WithFacing(RailwaySide facing) => new(Segment, facing, Position);
 	public readonly RailwayCoordinate WithPosition(float position) => new(Segment, Facing, position);
 
+	public readonly RailwayCoordinate Move(float distance) {
+
+		var currentSegment = Segment;
+		var currentFacing = Facing;
+
+
+
+	}
+
 }

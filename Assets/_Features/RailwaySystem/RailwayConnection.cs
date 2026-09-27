@@ -15,6 +15,10 @@
 	public RailwayJoint Joint => _joint;
 	public RailwaySide JointSide => _joint?.GetSide(this) ?? default;
 
+	public RailwayConnection ActiveOppositeConnection => JointSide == RailwaySide.Front
+		? Joint.ActiveRearConnection
+		: Joint.ActiveRearConnection;
+
 	//======================================================================| Constructors
 
 	public RailwayConnection(RailwaySegment segment, RailwaySide side) {
