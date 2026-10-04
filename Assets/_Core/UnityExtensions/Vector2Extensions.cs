@@ -1,5 +1,7 @@
-﻿using UnityEngine;
+﻿using System.ComponentModel;
+using UnityEngine;
 
+[EditorBrowsable(EditorBrowsableState.Never)]
 public static class Vector2Extensions {
 
 	public static Vector3 ToVector3WithX(this Vector2 vector, float x) => new(x, vector.x, vector.y);

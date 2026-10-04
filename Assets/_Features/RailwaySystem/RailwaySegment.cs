@@ -30,13 +30,13 @@ public class RailwaySegment {
 		var currentLength = 0f;
 
 		for (int i = 1; i < _samples.Count; i++) {
-
-			_samplePosition.Add(currentLength);
 			
 			currentLength += Vector3.Distance(
 				_samples[i - 1].Position,
 				_samples[i].Position
 			);
+
+			_samplePosition.Add(currentLength);
 
 		}
 
@@ -63,9 +63,13 @@ public class RailwaySegment {
 			length = Length - length;
 		
 		var index = Searching.MaximumLowerBound(_samplePosition, length);
+
+		if (index >= _samplePosition.Count - 1)
+			return _samples[^1];
+
 		var intervalLength = _samplePosition[index + 1] - _samplePosition[index];
 
-		var localLength = _samplePosition[index] - length;
+		var localLength = length - _samplePosition[index];
 		var factor = localLength / intervalLength;
 
 		return RailwaySample.Lerp(_samples[index], _samples[index + 1], factor);

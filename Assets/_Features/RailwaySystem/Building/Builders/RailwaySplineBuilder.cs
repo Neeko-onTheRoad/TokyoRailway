@@ -122,6 +122,9 @@ public class RailwaySplineBuilder : RailwayBuilder {
 				out var normal
 			);
 
+			tangent = tangent.ToVector3().normalized;
+			normal = Vector3.ProjectOnPlane(normal, tangent).normalized;
+
 			samples.Add(new(position, tangent, normal));
 
 		}
@@ -145,9 +148,7 @@ public class RailwaySplineBuilder : RailwayBuilder {
 
 		var container = seedInfo.Container;
 		var index = seedInfo.Index;
-		var seedTangent = container
-			.GetKnot(index).TangentOut
-			.ToVector2WithoutY();
+		var seedTangent = GetOutwardTangent(seed);
 
 		RailwayJoint joint = new();
 		joint.Join(seed, RailwaySide.Front);
@@ -162,21 +163,19 @@ public class RailwaySplineBuilder : RailwayBuilder {
 
 		foreach (var linkedIndex in indices) {
 
-			if (!_connectionsByIndex.TryGetValue((container, linkedIndex), out var connections)) continue;
+			if (!_connectionsByIndex.TryGetValue((container, linkedIndex), out var connections))
+				continue;
 
 			foreach (var connection in connections) {
 
 				if (connection == seed)
 					continue;
 
-				var linkedInfo = _indexInfo[connection];
-				var linkedTangent = container
-					.GetKnot(linkedInfo.Index).TangentOut
-					.ToVector2WithoutY();
+				var linkedTangent = GetOutwardTangent(connection);
 
-				var side = Vector2.Dot(seedTangent, linkedTangent) <= 0f
-					? RailwaySide.Rear
-					: RailwaySide.Front;
+				var side = Vector2.Dot(seedTangent, linkedTangent) >= 0f
+					? RailwaySide.Front
+					: RailwaySide.Rear;
 
 				joint.Join(connection, side);
 				_jointVisited.Add(connection);
@@ -184,6 +183,22 @@ public class RailwaySplineBuilder : RailwayBuilder {
 			}
 
 		}
+
+	}
+
+	private Vector2 GetOutwardTangent(RailwayConnection connection) {
+
+		var info = _indexInfo[connection];
+
+		var tangent = info.Container
+			.GetTangent(info.Index)
+			.WithoutY()
+			.normalized;
+
+		if (connection.Side == RailwaySide.Rear)
+			tangent *= -1f;
+
+		return tangent;
 
 	}
 

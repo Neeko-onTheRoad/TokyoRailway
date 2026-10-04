@@ -17,6 +17,9 @@ public class RailwayJoint {
 
 	//======================================================================| Properties
 
+	public IReadOnlyList<RailwayConnection> FrontConnections => _frontConnections;
+	public IReadOnlyList<RailwayConnection> RearConnections => _rearConnections;
+
 	public RailwayConnection ActiveFrontConnection =>
 		_frontConnections.Count > 0 ? _frontConnections[_frontSwitch] : null;
 

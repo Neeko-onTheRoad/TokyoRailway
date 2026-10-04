@@ -1,6 +1,8 @@
-﻿using Unity.Mathematics;
+﻿using System.ComponentModel;
+using Unity.Mathematics;
 using UnityEngine;
 
+[EditorBrowsable(EditorBrowsableState.Never)]
 public static class Float3Extensions {
 
 	public static Vector3 ToVector3(this float3 float3) => new(float3.x, float3.y, float3.z);

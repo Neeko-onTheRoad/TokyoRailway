@@ -8,6 +8,12 @@ public record RailwaySample(
 
 ) {
 
+	//======================================================================| Properties
+
+	public RailwaySample Flipped => this with { Tangent = -Tangent };
+
+	//======================================================================| Methods
+
 	public static RailwaySample Lerp(RailwaySample a, RailwaySample b, float t) {
 
 		var tangent = Vector3.Lerp(a.Tangent, b.Tangent, t);

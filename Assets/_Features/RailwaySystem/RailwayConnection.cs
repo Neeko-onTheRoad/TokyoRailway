@@ -1,35 +1,32 @@
 ﻿public class RailwayConnection {
 
-	//======================================================================| Fields
-
-	private RailwayJoint _joint = null;
-
-	private readonly RailwaySegment _segment;
-	private readonly RailwaySide _side;
-
 	//======================================================================| Properties
 
-	public RailwaySegment Segment => _segment;
-	public RailwaySide Side => _side;
+	public RailwaySegment Segment { get; }
+	public RailwaySide Side { get; }
 
-	public RailwayJoint Joint => _joint;
-	public RailwaySide JointSide => _joint?.GetSide(this) ?? default;
+	public RailwayJoint Joint { get; private set; }
+	public RailwaySide JointSide => Joint?.GetSide(this) ?? default;
 
 	public RailwayConnection ActiveOppositeConnection => JointSide == RailwaySide.Front
 		? Joint.ActiveRearConnection
 		: Joint.ActiveRearConnection;
 
+	public bool IsActiveOppositeConnectionReversed => Side != ActiveOppositeConnection.Side;
+
 	//======================================================================| Constructors
 
 	public RailwayConnection(RailwaySegment segment, RailwaySide side) {
-		_segment = segment;
-		_side = side;
+		Segment = segment;
+		Side = side;
 	}
 
 	//======================================================================| Methods
+	
+	public RailwaySample Evaluate() => Segment.Evaluate(0f, Side);
 
 	internal void SetJoint(RailwayJoint joint) {
-		_joint = joint;
+		Joint = joint;
 	}
 
 	public void ConnectTo(RailwayConnection connection) {
