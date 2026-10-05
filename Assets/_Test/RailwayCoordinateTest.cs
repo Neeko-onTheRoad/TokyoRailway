@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using UnityEngine;
 
 public class RailwayCoordinateTest : MonoBehaviour {
@@ -20,7 +21,7 @@ public class RailwayCoordinateTest : MonoBehaviour {
 		var segment = Network.Segments.ElementAt(SegmentIndex);
 		Draw(segment, Color.red, Color.blue, 0.1f, 0.1f);
 
-		var coordinate = new RailwayCoordinate(segment, RailwaySide.Front, segment.Length * SegmentPosition);
+		var coordinate = new RailwayCoordinate(segment, RailwaySide.Rear, segment.Length * SegmentPosition);
 		var movedPosition = coordinate.Move(Movement);
 
 		Gizmos.color = Color.red;

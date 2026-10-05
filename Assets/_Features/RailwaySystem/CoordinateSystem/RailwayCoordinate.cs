@@ -27,7 +27,7 @@ public struct RailwayCoordinate {
 	public readonly RailwaySample Evaluate() {
 
 		var sample = Segment.EvaluateByLength(Position);
-		if (Facing == RailwaySide.Rear) sample = sample.Flipped;
+		if (Facing == RailwaySide.Front) sample = sample.Flipped;
 
 		return sample;
 

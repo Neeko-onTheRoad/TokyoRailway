@@ -3,5 +3,6 @@
   <Project Path="VHierarchy.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="VInspector.csproj" />
-  <Project Path="Assembly-CSharp-firstpass.csproj" />
+  <Project Path="ArrowDrawing.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
 </Solution>

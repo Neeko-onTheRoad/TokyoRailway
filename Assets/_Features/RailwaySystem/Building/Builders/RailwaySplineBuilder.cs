@@ -18,6 +18,10 @@ public class RailwaySplineBuilder : RailwayBuilder {
 	private readonly Dictionary<RailwayConnection, ConnectionIndexInfo> _indexInfo = new();
 	private readonly Dictionary<(SplineContainer, SplineKnotIndex), HashSet<RailwayConnection>> _connectionsByIndex = new();
 
+	//======================================================================| Properties
+
+	public IReadOnlyList<RailwaySegment> Segments => _segments;
+
 	//======================================================================| Methods
 
 	public override IReadOnlyCollection<RailwaySegment> Build() {

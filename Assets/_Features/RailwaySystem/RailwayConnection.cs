@@ -10,9 +10,9 @@
 
 	public RailwayConnection ActiveOppositeConnection => JointSide == RailwaySide.Front
 		? Joint.ActiveRearConnection
-		: Joint.ActiveRearConnection;
+		: Joint.ActiveFrontConnection;
 
-	public bool IsActiveOppositeConnectionReversed => Side != ActiveOppositeConnection.Side;
+	public bool IsActiveOppositeConnectionReversed => Side == ActiveOppositeConnection.Side;
 
 	//======================================================================| Constructors
 
