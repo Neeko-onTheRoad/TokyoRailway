@@ -1,13 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
 
-public struct RailwayCoordinate {
+public readonly struct RailwayCoordinate {
 
 	//======================================================================| Properties
 
-	public RailwaySegment Segment { get; set; }
-	public RailwaySide Facing { get; set; }
-	public float Position { get; set; }
+	public RailwaySegment Segment { get; }
+	public RailwaySide Facing { get; }
+	public float Position { get; }
 
+	public readonly RailwayCoordinate Flipped => WithFacing(Facing.Opposite());
 	public readonly float NormalizedPosition => Position / Segment.Length;
 
 	//======================================================================| Constructors
@@ -84,6 +87,90 @@ public struct RailwayCoordinate {
 				facing = facing.Opposite();
 
 		}
+
+	}
+
+	public RailwayCoordinate WithPhysicalDistance(
+		float distance,
+		RailwaySide side,
+		float tolerance = 0.0005f,
+		float maximumMultiplier = 2f
+	) {
+
+		if (TryWithPhysicalDistance(
+			distance,
+			side,
+			out var result,
+			tolerance,
+			maximumMultiplier
+		)) return result;
+
+		throw new InvalidOperationException(
+			"The point with given distance in maximum range was not found."
+		);
+
+	}
+	
+	public bool TryWithPhysicalDistance(
+		float distance,
+		RailwaySide side,
+		out RailwayCoordinate coordinate,
+		float tolerance = 0.0005f,
+		float maximumMultiplier = 2f
+	) {
+
+		distance = Math.Abs(distance);
+
+		var position = Evaluate().Position;
+		var @this = this;
+
+		float GetPhysicalDistance(float offset) {
+			if (side == RailwaySide.Rear) offset *= -1f;
+			var newPosition = @this.Move(offset).Evaluate().Position;
+			return Vector3.Distance(position, newPosition);
+		}
+
+		var maximum = distance * maximumMultiplier;
+
+		Stack<(
+			float StartPoint,
+			float EndPoint,
+			float StartValue,
+			float EndValue
+		)> sections = new();
+
+		sections.Push((0f, maximum, GetPhysicalDistance(0f), GetPhysicalDistance(maximum)));
+
+		while (sections.Count > 0) {
+
+			var (startPoint, endPoint, startValue, endValue) = sections.Pop();
+			var length = endPoint - startPoint;
+
+			var maximumPossibleValue = (startValue + endValue + length) / 2f;
+			if (maximumPossibleValue < distance)
+				continue;
+				
+			var halfPoint = (startPoint + endPoint) / 2f;
+			var halfValue = GetPhysicalDistance(halfPoint);
+
+			if (Math.Abs(halfValue - distance) <= tolerance) {
+
+				if (side == RailwaySide.Rear) halfPoint *= -1f;
+				coordinate = Move(halfPoint);
+				
+				return true;
+
+			}
+
+			if (length < tolerance) continue;
+
+			sections.Push((halfPoint, endPoint, halfValue, endValue));
+			sections.Push((startPoint, halfPoint, startValue, halfValue));
+
+		}
+
+		coordinate = default;
+		return false;
 
 	}
 

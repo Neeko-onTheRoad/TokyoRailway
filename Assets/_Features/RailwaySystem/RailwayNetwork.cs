@@ -10,7 +10,7 @@ public class RailwayNetwork : MonoBehaviour {
 
 	//======================================================================| Properties
 
-	public IReadOnlyCollection<RailwaySegment> Segments { get; private set; }
+	public IReadOnlyList<RailwaySegment> Segments { get; private set; }
 
 	//======================================================================| Unity Methods
 

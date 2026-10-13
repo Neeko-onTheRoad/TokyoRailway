@@ -4,7 +4,7 @@ public abstract class RailwayConnectionJointBuilder : RailwayBuilder {
 
 	//======================================================================| Methods
 
-	public override IReadOnlyCollection<RailwaySegment> Build() {
+	public override IReadOnlyList<RailwaySegment> Build() {
 		
 		List<RailwaySegment> segments = new(GetSegments());
 

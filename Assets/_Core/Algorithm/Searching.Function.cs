@@ -7,7 +7,8 @@ public static partial class Searching /*Function*/ {
 		Func<float, float> func,
 		float startBound,
 		float endBound,
-		float count = 32
+		float count = 32,
+		bool findMaximum = false
 		
 	) {
 
@@ -22,7 +23,7 @@ public static partial class Searching /*Function*/ {
 			var midLeftValue = func(midLeft);
 			var midRightValue = func(midRight);
 
-			if (midLeftValue > midRightValue) startBound = midLeft;
+			if ((midLeftValue > midRightValue) ^ findMaximum) startBound = midLeft;
 			else endBound = midRight;
 
 		}

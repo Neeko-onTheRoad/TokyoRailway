@@ -24,7 +24,7 @@ public class RailwaySplineBuilder : RailwayBuilder {
 
 	//======================================================================| Methods
 
-	public override IReadOnlyCollection<RailwaySegment> Build() {
+	public override IReadOnlyList<RailwaySegment> Build() {
 
 		_segments.Clear();
 		_jointVisited.Clear();
@@ -55,42 +55,59 @@ public class RailwaySplineBuilder : RailwayBuilder {
 		var spline = container[splineIndex];
 		if (spline.Count < 2) return;
 
-		int startIndex = 0;
+		List<int> splitIndices = new() { 0 };
 
-		for (int endIndex = 1; endIndex < spline.Count; endIndex++) {
+		for (int i = 1; i < spline.Count; i++) {
 
-			SplineKnotIndex index = new(splineIndex, endIndex);
+			var index = new SplineKnotIndex(splineIndex, i);
 
-			bool isLast = endIndex == spline.Count - 1;
-			bool isLinked = container.KnotLinkCollection.TryGetKnotLinks(index, out _);
+			if (container.KnotLinkCollection.TryGetKnotLinks(index, out _))
+				splitIndices.Add(i);
 
-			if (!isLast && !isLinked) continue;
+		}
 
-			var segment = BuildSegment(container, splineIndex, startIndex, endIndex);
+		if (!spline.Closed && splitIndices[^1] != spline.Count - 1)
+			splitIndices.Add(spline.Count - 1);
+
+		int segmentCount = spline.Closed
+			? splitIndices.Count
+			: splitIndices.Count - 1;
+
+		for (int i = 0; i < segmentCount; i++) {
+
+			int startIndex = splitIndices[i];
+			int endIndex = spline.Closed
+				? splitIndices[(i + 1) % splitIndices.Count]
+				: splitIndices[i + 1];
+
+			var segment = BuildSegment(
+				container,
+				splineIndex,
+				startIndex,
+				endIndex
+			);
+
 			_segments.Add(segment);
 
-			Register(startIndex, 1, segment.FrontConnection);
-			Register(endIndex, -1, segment.RearConnection);
+			Register(startIndex, segment.FrontConnection);
+			Register(endIndex, segment.RearConnection);
 
-			startIndex = endIndex;
-			
-			void Register(int knotIndex, int offset, RailwayConnection connection) {
+		}
 
-				_indexInfo[connection] = new(
-					container,
-					new(splineIndex, knotIndex)
-				);
+		void Register(int knotIndex, RailwayConnection connection) {
 
-				var key = (container, new SplineKnotIndex(splineIndex, knotIndex));
+			var index = new SplineKnotIndex(splineIndex, knotIndex);
 
-				if (!_connectionsByIndex.TryGetValue(key, out var connections)) {
-					connections = new();
-					_connectionsByIndex.Add(key, connections);
-				}
+			_indexInfo[connection] = new(container, index);
 
-				connections.Add(connection);
+			var key = (container, index);
 
+			if (!_connectionsByIndex.TryGetValue(key, out var connections)) {
+				connections = new();
+				_connectionsByIndex.Add(key, connections);
 			}
+
+			connections.Add(connection);
 
 		}
 
@@ -100,8 +117,14 @@ public class RailwaySplineBuilder : RailwayBuilder {
 
 		var spline = container[splineIndex];
 
+		var splineLength = spline.GetLength();
+
 		var startDistance = spline.GetLengthBetween(0, startIndex);
-		var segmentLength = spline.GetLengthBetween(startIndex, endIndex);
+		var endDistance = spline.GetLengthBetween(0, endIndex);
+
+		var segmentLength = spline.Closed && endIndex <= startIndex
+			? splineLength - startDistance + endDistance
+			: endDistance - startDistance;
 
 		int intervalCount = Mathf.Max(1, Mathf.CeilToInt(segmentLength / _sampleInterval));
 
@@ -111,6 +134,9 @@ public class RailwaySplineBuilder : RailwayBuilder {
 
 			var progress = (float)i / intervalCount;
 			var distance = startDistance + segmentLength * progress;
+
+			if (spline.Closed)
+				distance = Mathf.Repeat(distance, splineLength);
 
 			var parameter = SplineUtility.GetNormalizedInterpolation(
 				spline,

@@ -3,6 +3,6 @@ using UnityEngine;
 
 public abstract class RailwayBuilder : MonoBehaviour {
 
-	public abstract IReadOnlyCollection<RailwaySegment> Build();
+	public abstract IReadOnlyList<RailwaySegment> Build();
 
 }
